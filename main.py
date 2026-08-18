@@ -193,6 +193,29 @@ combined_sentiment_df['overall_label'] = combined_sentiment_df['overall_average_
 latest_score = combined_sentiment_df['overall_average_sentiment'].iloc[-1]
 latest_label = combined_sentiment_df['overall_label'].iloc[-1]
 
+previous_score = combined_sentiment_df[
+    'overall_average_sentiment'
+].iloc[-2]
+
+#create alert tracking variable
+if "extreme_fear_alert_sent" not in st.session_state:
+    st.session_state.extreme_fear_alert_sent = False
+
+
+#trigger when score go below 25
+if latest_score < 25 and previous_score >= 25:
+
+    if not st.session_state.extreme_fear_alert_sent:
+
+        send_alert_email(latest_score)
+
+        st.session_state.extreme_fear_alert_sent = True
+
+
+#reset trigger when go back up to 25
+if latest_score >= 25:
+    st.session_state.extreme_fear_alert_sent = False
+
 # Display Current Aggregate Sentiment
 st.subheader(" ")
 st.header("Current Aggregate Sentiment")
@@ -1061,5 +1084,32 @@ with tab4:
             plot_bgcolor='#f9f9f9',
             )
         st.plotly_chart(fig_skew, width='stretch', config={'displayModeBar': False})
+
+def send_alert_email(score):
+    msg = EmailMessage()
+
+    msg["Subject"] = "Market Sentiment: Extreme Fear Alert"
+    msg["From"] = st.secrets["EMAIL"]
+    msg["To"] = st.secrets["ALERT_EMAIL"]
+
+    msg.set_content(
+        f"""
+        Market Sentiment Alert
+
+        The Aggregate Score has fallen below 25.
+
+        Current Aggregate Score: {score:.0f}/100
+
+        Sentiment: Extreme Fear
+        """
+    )
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login(
+            st.secrets["EMAIL"],
+            st.secrets["EMAIL_PASSWORD"]
+        )
+
+    smtp.send_message(msg)
 
 
