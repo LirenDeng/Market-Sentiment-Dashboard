@@ -1,5 +1,7 @@
 import streamlit as st
 import yfinance as yf
+import smtplib
+from email.message import EmailMessage
 import pandas as pd
 import numpy as np
 import datetime
